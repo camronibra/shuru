@@ -1,0 +1,26 @@
+# No secrets in this file. Relative paths resolve against [paths].root.
+# LAB_ROOT overrides root.
+
+[lab]
+# Stored timestamps are UTC, so date-based splits line up across sources.
+timezone = "UTC"
+
+[paths]
+# Empty means ~/.local/share/shuru
+root = ""
+db_file = "db/lab.db"
+
+# One folder per job. In server mode each job's user can only write to its own.
+[paths.job_dirs]
+db     = "db"
+ingest = "ingest"
+news   = "news"
+stats  = "stats"
+train  = "train"
+health = "health"
+backup = "backup"
+
+[logging]
+level = "INFO"
+format = "json"
+max_field_chars = 2000

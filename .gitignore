@@ -1,6 +1,63 @@
+# --- Legacy friendlyscraper ---
 sources_local.py
-__pycache__/
-.venv/
+*.jsonl
 *.txt
 !requirements.txt
-*.jsonl
+# Test fixtures (e.g. sample robots.txt files) must stay tracked.
+!tests/fixtures/**/*.txt
+
+# --- Python / tooling ---
+__pycache__/
+*.py[cod]
+.venv/
+.venv-*/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# --- Secrets and local config ---
+.env
+.env.*
+!.env.example
+.envrc
+config/*.local.toml
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# --- Data: never committed (it lives outside the repo; this is a safety net) ---
+/data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.parquet
+*.warc
+*.warc.gz
+*.wet
+*.wet.gz
+*.csv.gz
+*.log
+/models/
+*.joblib
+*.pkl
+
+# --- Rust (only if the conditional Rust stage happens) ---
+/rust/*/target/
+*.so
+
+# --- OS / editor clutter ---
+.DS_Store
+Thumbs.db
+*.swp
+
+# --- AI tooling notes ---
+CLAUDE.md
+.claude/

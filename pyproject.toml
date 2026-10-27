@@ -1,0 +1,48 @@
+[project]
+name = "shuru"
+version = "0.1.0"
+description = "Pipeline for collecting and cleaning text in low-resource languages."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+authors = [{ name = "Camron Ibrahimi" }]
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lab"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+extend-exclude = ["scraper.py", "source.py", "models.py", "storage.py"]  # legacy friendlyscraper files
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]  # assert is fine in tests
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+mypy_path = "src"
+files = ["src", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers"]
+markers = [
+    "pi: needs Raspberry Pi hardware",
+]

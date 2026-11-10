@@ -1,26 +1,130 @@
-# No secrets in this file. Relative paths resolve against [paths].root.
-# LAB_ROOT overrides root.
-
-[lab]
-# Stored timestamps are UTC, so date-based splits line up across sources.
-timezone = "UTC"
+# shuru settings. No secrets in this file (the ntfy topic comes from the environment).
+# Every key is optional: the values below are the built-in defaults, written out so
+# they can be reviewed and changed in one place.
+#
+# Environment overrides: LAB_ROOT, LAB_LOG_LEVEL, LAB_LOG_FORMAT, NTFY_TOPIC, NTFY_SERVER.
 
 [paths]
-# Empty means ~/.local/share/shuru
+# Where the database, models and exports live. Always outside the repo.
+# Empty means $XDG_DATA_HOME/shuru, or ~/.local/share/shuru. LAB_ROOT overrides it.
 root = ""
+# Relative paths resolve against root and may not escape it.
 db_file = "db/lab.db"
 
-# One folder per job. In server mode each job's user can only write to its own.
-[paths.job_dirs]
-db     = "db"
-ingest = "ingest"
-news   = "news"
-stats  = "stats"
-train  = "train"
-health = "health"
-backup = "backup"
+[paths.dirs]
+db        = "db"         # database, WAL and the job lock
+models    = "models"     # trained classifier files
+exports   = "exports"    # corpus snapshots (JSONL)
+reports   = "reports"    # corpus statistics
+backups   = "backups"    # database snapshots
+labelling = "labelling"  # hand-labelling sheets
 
 [logging]
 level = "INFO"
-format = "json"
+# "text" for a terminal, "json" for journald (one JSON object per line).
+format = "text"
+# Longer string fields are cut. Log lines can carry scraped text, which is untrusted.
 max_field_chars = 2000
+
+[http]
+# Sent with every request. Point the URL at a page that says who you are.
+user_agent = "shuru/0.1 (+https://github.com/camronibra/shuru)"
+timeout_s = 20.0
+# Responses larger than this (after decompression) are dropped mid-download.
+max_bytes = 3000000
+# Minimum pause between two requests to the same site. robots.txt can raise it.
+default_delay_s = 2.0
+# Retries for network errors, 429 and 5xx. Each waits twice as long as the last.
+max_retries = 2
+max_redirects = 5
+# After this many failed requests in a row, a site is left alone for the rest of the run.
+max_host_failures = 5
+
+[ingest]
+# Sites fetched at the same time. One thread per site; the delay is per site.
+max_workers = 8
+# New pages fetched per source in one run.
+max_pages_per_source = 200
+# A source stops after this long even if pages are left (slow sites, long crawl delays).
+max_seconds_per_source = 900
+# Rows written per database transaction.
+batch_size = 50
+# A URL that failed is tried again after this many hours, up to max_tries times.
+retry_after_hours = 24
+max_tries = 3
+
+[clean]
+# Keep a document only if this share of its letters is in the script. 0 disables.
+script = "arabic"
+min_script_ratio = 0.6
+min_chars = 200
+# Longer documents are cut at a paragraph boundary.
+max_chars = 100000
+
+[dedup]
+# Near-duplicate detection: MinHash over word shingles, looked up with LSH bands.
+shingle_size = 3
+num_perm = 64
+bands = 16
+# Estimated Jaccard similarity at or above this counts as the same document.
+threshold = 0.8
+
+[corpus]
+# Target corpus size in characters, shown as progress by `shuru stats`. 0 = no target.
+target_chars = 0
+
+[model]
+# Character n-grams are hashed into 2**hash_bits buckets, so memory stays fixed.
+hash_bits = 18
+ngram_min = 1
+ngram_max = 4
+epochs = 5
+learning_rate = 0.5
+l2 = 0.000001
+seed = 13
+# Training examples are sentences cut from documents.
+min_sentence_chars = 30
+max_sentence_chars = 400
+# Caps keep one large outlet from dominating the model.
+max_examples_per_source = 20000
+max_examples = 200000
+# The newest share of documents, by date, is held out as a test set. Never random.
+test_date_fraction = 0.2
+# Or fix the cutoff: documents dated on or after this day are test. Empty = use the fraction.
+test_from = ""
+# Only the first N characters of a document are used when scoring whole documents.
+max_score_chars = 2000
+
+[news]
+max_items_per_feed = 100
+
+[drift]
+# Compares the confidence histogram of the latest window with the first window
+# the active model scored (population stability index).
+window_days = 7
+min_items = 50
+psi_alert = 0.25
+
+[labelling]
+# Pending items kept in the hand-labelling queue, least certain first.
+queue_size = 100
+max_per_feed = 25
+
+[health]
+# Sized for a 2 GB host that is shared with other services.
+min_mem_available_mb = 150
+max_swap_used_mb = 512
+max_load_per_cpu = 2.0
+min_disk_free_mb = 2000
+max_wal_mb = 200
+max_cpu_temp_c = 80.0
+# systemd units that must be active, e.g. ["pihole-FTL"]. Empty = check nothing.
+watch_services = []
+
+[notify]
+# Alerts are sent only when NTFY_TOPIC is set in the environment. Otherwise they are logged.
+ntfy_server = "https://ntfy.sh"
+
+[backup]
+# Snapshots kept in the backups folder.
+keep = 7

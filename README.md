@@ -2,73 +2,172 @@
 
 *A small data pipeline on a mission: stopping machines from misclassifying "low-resource" languages spoken by millions.*
 
-> **Status: early development (Stage 0 of 7).** The project skeleton, configuration and logging interfaces are in place. Most modules are still specified stubs. The original prototype scraper, which does run, is described under [Legacy prototype](#legacy-prototype-friendlyscraper).
+> The pipeline runs end to end and is tested, but it can't read from dataset APIs yet, and the Raspberry Pi
+> benchmark is still to do.
 
-## About
+Language tools get Dari wrong all the time. Usually they just call it Persian (Farsi).
+Dari is spoken by millions of people in Afghanistan, and it's close to Iranian Persian,
+but it isn't the same, and treating the two as one means Dari speakers get worse
+translation, worse search and worse speech recognition. The same thing happens to plenty
+of other languages that sit next to a bigger relative.
 
-NLP tools routinely misclassify low-resource languages or lump them in with a dominant relative. Fixing that starts with data: clean, deduplicated text corpora where closely related languages and varieties are told apart.
+The fix starts with data: text that's been cleaned, deduplicated, and labelled with the
+variety it's actually written in. shuru is my attempt at building that. It collects text
+from sources you choose, cleans it, removes duplicates and stores it as a corpus. It can
+also train a small classifier to tell two close varieties apart, use it to filter the
+corpus, check it against live headlines it has never seen, and hand you the sentences it
+is least sure about so you can label them yourself.
 
-shuru is a general tool for collecting text in low-resource languages. It gathers text from sources you configure, then extracts, cleans, deduplicates and labels it and stores it as a corpus for training models elsewhere. A lightweight classifier can be trained to tell a language from its close relatives and used to filter the corpus. Its least certain predictions are queued for hand labelling, so its quality can be measured and improved.
+Dari (`prs`) against Iranian Persian (`pes`) is the case I'm working on, but nothing is
+hard-coded to them. The sources, labels, marker words and script are all set in config
+files.
 
-The first problem it is being built to solve, is Dari. It's a language spoken by millions in Afghanistan, it is routinely labelled as Persian (Farsi), so the first classifier separates Dari from Iranian Persian. The pipeline itself is not tied to those languages.
+*shuru* (شروع) means "beginning".
 
-## How it runs
+## Trying it
 
-- **Locally:** anyone with a terminal can clone it and run it. You choose and configure your own sources; none are bundled.
-- **Server mode (optional):** unattended on a small Linux host with systemd. The reference target is a Raspberry Pi 4 Model B with **2 GB RAM** and an SSD, so everything is built to fit that budget: streaming instead of loading and capped response sizes. No model training happens on the Pi. It only collects, cleans and stores text, and training is done on a separate PC from exported corpus snapshots.
-
-## Planned pipeline
-
-| Stage | What it adds |
-|---|---|
-| 0 | Project skeleton: packaging, config, structured logging, server bootstrap ← *current* |
-| 1 | SQLite storage (WAL), schema migrations, a runs table recording every job, phone alerts on failure, health monitoring |
-| 2 | Ingestion: config-driven sources, robots.txt, polite fetching, text extraction, corpus storage and cleaning |
-| 3 | Language-script text processing (normalisation, tokenisation, near-duplicate detection) with benchmarks |
-| 4 | Corpus statistics, language-ID baselines, classifier training on a PC (first case: Dari vs Iranian Persian) and a model registry |
-| 5 | Scoring live news headlines as unseen data, plus drift tracking |
-| 6 | A labelling queue for the least certain sentences |
-| 7 | systemd hardening, backups, CI and documentation |
-
-## Quick start (development)
-
-Requires Python 3.11+, SQLite 3.38+ and [uv](https://docs.astral.sh/uv/).
+You need Python 3.11 or newer and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-make lock    # first time only: resolve dependencies into uv.lock
-make sync    # install the locked dependencies
-make check   # lint, type-check and test
+git clone https://github.com/camronibra/shuru && cd shuru
+make sync     # install dependencies
+make demo     # run everything once on made-up data
 ```
 
-Settings live in `config/settings.toml`. Copy `.env.example` to `.env` for local overrides.
+The demo makes eight fake news sites full of random Persian-script words, serves them on
+your own machine, and runs every command in turn: crawl, crawl again (nothing new the
+second time), train, score, poll headlines, label a few, retrain, export, back up. Nothing
+goes out to the internet. If you want to poke around the result afterwards, run
+`uv run python scripts/demo.py --keep DIR` instead.
 
-## Design principles
+The words are random, so ignore the accuracy numbers the demo prints. It's there to show
+the parts working together, not to prove anything about Dari.
 
-- **Nothing scraped is ever committed.** The repo holds the code, config and docs only. Data, models and the database would live outside it, on whichever local machine it's being run on.
-- **Polite, config-driven collection.** Sources are defined in TOML, not code.
-- **Labels from source metadata (distant supervision).** Each source is tagged with the language or variety it represents and its text inherits that label. In the first case, text from Afghan outlets is labelled Dari and text from Iranian outlets is labelled Persian. This label is noisy because outlets usually quote each other, publish in both varieties and carry wire copy. A classifier can also learn an outlet's keyboard habits or house style instead of the language variety. Script normalisation, deduplication and splitting train/test data by source and by date are there as tools to assist in limitting this. Hand labels are stored separately, so their effect can be measured.
-- **Honest evaluation.** Train/test splits are by source and by date, never random. News feeds used for scoring are separate from the training sources.
-- **Measure before optimising.** The pipeline is expected to be network-bound. Per-step timings are recorded for every run and a compiled (Rust) component will be added only if a CPU-bound step shows up in measurements.
-- **Scraped content is hostile input.** It is truncated, sanitised and never executed or rendered as HTML.
-- **Every job is observable.** Each run is recorded with its status and metrics, and failures send a phone alert.
+## Using your own sources
 
-## Legacy prototype: friendlyscraper
+Sources go in `config/sources.local.toml`. That file is ignored by git, so your list of
+sites stays on your machine. `config/sources.toml` explains every option. A source looks
+like this:
 
-The project started as `friendlyscraper`, a small rate-limited scraper. Its files (`scraper.py`, `source.py`, `models.py`) are still at the repo root for reference and will be replaced by the Stage 2 ingestion pipeline.
+```toml
+[[source]]
+name = "some-af-outlet"
+kind = "rss"              # or "sitemap", "listing", "file"
+label = "prs"
+urls = ["https://news.example.af/rss"]
+content_selector = "div.article-body"   # optional
+licence = "All rights reserved; private research use"
+```
+
+Every document from a source gets that source's label. It's worth marking one or two
+sources per label with `holdout = true`. The model never trains on those, so they tell you
+whether it works on outlets it hasn't seen, which is the number that actually matters.
+
+Then:
 
 ```bash
-pip install -r requirements.txt
-python scraper.py
+uv run shuru ingest        # fetch anything new
+uv run shuru stats         # what got stored, from where, and why the rest didn't
+uv run shuru search کابل   # search the corpus
+
+uv run shuru train         # train and compare against two simple baselines
+uv run shuru score         # label every document with the model
+uv run shuru export --model-label prs --min-confidence 0.9
 ```
 
-It runs against [books.toscrape.com](https://books.toscrape.com/), a site intended for scraping practice, and writes a JSONL file (one JSON object per line: url, text). For each source you supply the category pages, an article URL pattern (regex) and a CSS selector. To add your own, copy the example from `source.py` into `sources_local.py`, which is gitignored and takes priority.
+For headlines, put feeds from *different* outlets in `config/news_feeds.local.toml` and run
+`uv run shuru news`. `shuru label export` writes the least certain headlines to a
+spreadsheet file. Fill in the labels, then run `shuru label apply` and `shuru label report`
+to see how the model really does against your own judgement.
 
-The prototype checks robots.txt before every request, sends a descriptive user agent, waits at least 2 seconds between requests (longer if the site sets a crawl delay) and stores the source directory. It has no retry/backoff and no support for JavaScript-rendered sites.
+`uv run shuru --help` lists everything. Data lives in `~/.local/share/shuru` unless you set
+`LAB_ROOT`. Settings, with an explanation for each, are in `config/settings.toml`.
 
-## Future direction
+## How it works
 
-Live scraping is the small-scale mode. A later direction is finding text in target languages inside web archives (e.g. Common Crawl), using the same extraction and classification logic at a much larger scale.
+The long version is in [docs/architecture.md](docs/architecture.md). The short one:
 
-## Disclaimer
+It collects politely. It reads robots.txt, waits at least two seconds between requests to
+the same site, says who it is in the user agent, backs off when a site struggles, and
+never downloads a page it already has.
 
-Not affiliated with any website scraped with it. Use only where a site's terms of service and the law permit. You are responsible for your own compliance, including copyright and dataset licences. Provided as is, without warranty.
+It treats every page as possibly hostile. It only follows links and redirects to the
+source's own site, caps download sizes, and parses HTML without ever running it.
+
+Persian-script text comes in many spellings of the same thing. Two kinds of yeh, two kinds
+of kaf, three sets of digits, invisible joining characters. shuru evens all of that out
+first, so a classifier can't learn "this site uses an Arabic keyboard" and call it
+language. Exact and near-duplicate copies are caught too, since news sites run the same
+wire stories.
+
+Labels come from the source, not from a person. That's cheap but noisy: outlets quote each
+other and carry wire copy, and a model can end up learning one outlet's style instead of
+the language. To keep that honest, training and test data are split by source and by date
+(never at random), and hand labels are stored separately so you can measure how much the
+source labels can be trusted.
+
+The classifier itself is deliberately simple: character n-grams and logistic regression,
+written out in plain Python so you can read the whole thing. Every model is compared with
+two baselines: always guessing the most common label, and counting known Dari and Persian
+words.
+
+Every run is recorded with its counts and timings, so when something is slow you can see
+which step it was. Failures can send an alert to your phone through
+[ntfy](https://ntfy.sh).
+
+## Running it on a small server
+
+It can also run by itself on a small Linux machine. I'm aiming at a Raspberry Pi 4 with
+2 GB of RAM that also runs other things. `sudo ./scripts/bootstrap_server.sh` sets up a
+user, installs the code and turns on the systemd timers in `deploy/systemd/`. The jobs run
+at low priority with memory and CPU limits, inside a fairly tight sandbox, and are only
+reachable over Tailscale.
+
+Training doesn't happen on the Pi. Copy a backup to a proper computer, train there, and
+bring the model back with `shuru model install`.
+
+## Speed
+
+From [bench/RESULTS.md](bench/RESULTS.md): cleaning and deduplicating a document takes
+about 5 ms of CPU, while the crawler waits at least 2,000 ms between requests to a site. So
+crawling is limited by politeness, not by computing power. With 20,000 documents, every job
+stayed under 50 MB of memory, and training stayed under 180 MB. That's why I dropped the
+plan for a Rust extension: [docs/decisions/0001-no-rust.md](docs/decisions/0001-no-rust.md)
+explains it.
+
+## Working on it
+
+```bash
+make check    # formatting, linting, type checks and tests
+make fmt      # fix formatting
+```
+
+The tests don't touch the internet. The crawler tests use fake sites on your own machine.
+
+If you want to read the code, start with `src/lab/cli.py`. Every command is a short
+function there that hands off to the module doing the work, and each module begins with a
+note on what it does and why.
+
+The first version of this, a single-file scraper called friendlyscraper, is saved under
+the git tag `friendlyscraper-prototype`.
+
+## What it can't do (yet)
+
+- Read from dataset APIs. Right now a dataset has to be downloaded and turned into a
+  JSON Lines file first.
+- Handle sites that only build their pages with JavaScript. Those need an RSS feed or a
+  sitemap.
+- Act as a general language detector. It only separates the labels you train it on, and
+  it's only as good as those labels.
+- Read Solar Hijri dates. When a page only gives one of those, the fetch date is used.
+
+## Please be careful with it
+
+Read [docs/data-ethics.md](docs/data-ethics.md) before adding a source. The short version:
+follow robots.txt and each site's terms, write down the licence of anything you collect,
+don't republish text you don't have the rights to, and don't treat source labels as facts
+about anyone's language.
+
+I'm not affiliated with any site you collect from. Only use this where the site's terms
+and the law allow it. You're responsible for your own use, including copyright and
+dataset licences. It comes as is, with no warranty. See [LICENSE](LICENSE).

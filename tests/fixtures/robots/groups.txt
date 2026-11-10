@@ -1,0 +1,11 @@
+# One group for everyone, a stricter one for us, and one shared by two other bots.
+User-agent: *
+Disallow: /admin/
+
+User-agent: shuru
+Disallow: /drafts/
+Crawl-delay: 20
+
+User-agent: otherbot
+User-agent: thirdbot
+Disallow: /

@@ -1,0 +1,22 @@
+# News feeds whose headlines are scored by the classifier. Nothing is bundled.
+# Put your own feeds in config/news_feeds.local.toml (same format, gitignored).
+#
+# These must be outlets that are NOT training sources. The point of scoring live
+# headlines is to watch the model on text it has never seen; a feed from a site it
+# was trained on would only flatter it. `shuru news` warns if a feed shares a site
+# with a training source.
+#
+#   name   short id: lower-case letters, digits, "-" or "_"
+#   url    an RSS or Atom feed
+#   label  optional: the variety this outlet is assumed to publish in. Used to
+#          track how often the model agrees with it. Never used for training.
+
+# [[feed]]
+# name = "example-af-headlines"
+# url = "https://headlines.example.af/feed"
+# label = "prs"
+
+# [[feed]]
+# name = "example-ir-headlines"
+# url = "https://headlines.example.ir/rss.xml"
+# label = "pes"

@@ -1,0 +1,11 @@
+[Unit]
+Description=shuru: label new documents with the active model (daily)
+
+[Timer]
+OnCalendar=*-*-* 03:20:00
+# Spread start times a little, and catch up after the machine was off.
+RandomizedDelaySec=600
+Persistent=true
+
+[Install]
+WantedBy=timers.target

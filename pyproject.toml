@@ -6,13 +6,24 @@ readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
 authors = [{ name = "Camron Ibrahimi" }]
-dependencies = []
+dependencies = [
+    # HTTP client: streaming bodies (so responses can be size-capped), timeouts, typed.
+    "httpx>=0.27",
+    # HTML parser (lexbor, compiled). The only compiled dependency.
+    "selectolax>=0.3.21",
+    # Safe XML parsing for RSS/Atom feeds and sitemaps (entity-expansion attacks).
+    "defusedxml>=0.7.1",
+]
+
+[project.scripts]
+shuru = "lab.cli:main"
 
 [dependency-groups]
 dev = [
     "pytest>=8.3",
     "ruff>=0.6",
     "mypy>=1.11",
+    "types-defusedxml>=0.7",
 ]
 
 [build-system]
@@ -26,23 +37,29 @@ packages = ["src/lab"]
 line-length = 100
 target-version = "py311"
 src = ["src", "tests"]
-extend-exclude = ["scraper.py", "source.py", "models.py", "storage.py"]  # legacy friendlyscraper files
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF"]
+ignore = [
+    "RUF001",  # ambiguous unicode characters: Persian-script literals are the point here
+    "RUF002",
+    "RUF003",
+]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]  # assert is fine in tests
+# Seeded `random` builds synthetic text and shuffles data. It is not used for security.
+"tests/**" = ["S101", "S311"]  # assert is fine in tests
+"bench/**" = ["S311"]
+"scripts/**" = ["S311"]
+"src/lab/synth.py" = ["S311"]
+"src/lab/model/**" = ["S311"]  # seeded shuffling and sampling
 
 [tool.mypy]
 python_version = "3.11"
 strict = true
 mypy_path = "src"
-files = ["src", "tests"]
+files = ["src", "tests", "scripts", "bench"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["-ra", "--strict-markers"]
-markers = [
-    "pi: needs Raspberry Pi hardware",
-]

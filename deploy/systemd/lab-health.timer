@@ -1,0 +1,11 @@
+[Unit]
+Description=shuru: host health check (every 15 minutes)
+
+[Timer]
+OnCalendar=*:0/15
+# Spread start times a little, and catch up after the machine was off.
+RandomizedDelaySec=60
+Persistent=true
+
+[Install]
+WantedBy=timers.target

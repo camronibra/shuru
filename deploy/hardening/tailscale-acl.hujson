@@ -1,0 +1,37 @@
+// Tailscale access policy for a shuru server (paste into the admin console's
+// Access controls). Generic: it uses a tag and a group instead of machine names.
+//
+// Tag the server when you bring it up:   sudo tailscale up --advertise-tags=tag:shuru
+// Nothing is exposed to the internet; only your own devices can reach the server,
+// and the server itself cannot open connections into your tailnet.
+{
+  "groups": {
+    // Replace with your Tailscale login(s).
+    "group:shuru-admins": ["you@example.com"],
+  },
+
+  "tagOwners": {
+    "tag:shuru": ["group:shuru-admins"],
+  },
+
+  "acls": [
+    // Admins may SSH to the server. That is the only way in.
+    {"action": "accept", "src": ["group:shuru-admins"], "dst": ["tag:shuru:22"]},
+    // No rule lets tag:shuru reach anything else: a compromised job cannot pivot
+    // to other machines on the tailnet.
+  ],
+
+  "ssh": [
+    // Optional Tailscale SSH (identity from your Tailscale login, no keys to manage).
+    {
+      "action": "check",
+      "src": ["group:shuru-admins"],
+      "dst": ["tag:shuru"],
+      "users": ["autogroup:nonroot"],
+    },
+  ],
+
+  "tests": [
+    {"src": "group:shuru-admins", "accept": ["tag:shuru:22"], "deny": ["tag:shuru:80"]},
+  ],
+}

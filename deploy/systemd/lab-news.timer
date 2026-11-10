@@ -1,0 +1,11 @@
+[Unit]
+Description=shuru: poll headlines, score, update drift and the labelling queue (hourly)
+
+[Timer]
+OnCalendar=*-*-* *:40:00
+# Spread start times a little, and catch up after the machine was off.
+RandomizedDelaySec=300
+Persistent=true
+
+[Install]
+WantedBy=timers.target

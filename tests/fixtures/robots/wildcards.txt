@@ -1,0 +1,10 @@
+# Patterns with * and $, and an Allow that is more specific than a Disallow.
+User-agent: *
+Disallow: /search
+Disallow: /*?print=
+Disallow: /*.pdf$
+Disallow: /private/
+Allow: /private/press/
+Crawl-delay: 7
+
+Sitemap: https://example.org/sitemap.xml

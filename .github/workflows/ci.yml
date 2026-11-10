@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install (exactly what uv.lock says)
+        run: uv sync --locked
+      - name: Lint, type-check, test
+        run: make check
+      - name: requirements.lock matches uv.lock
+        run: |
+          uv export --no-dev --no-emit-project --format requirements-txt -o /tmp/req.lock
+          diff <(grep -v '^#' requirements.lock) <(grep -v '^#' /tmp/req.lock)
+      - name: End-to-end demo on synthetic sites
+        run: uv run python scripts/demo.py
+      - name: Benchmark (small, for a smoke test; numbers on CI runners are noisy)
+        run: uv run python bench/bench_text.py --docs 50
+      - name: systemd units parse
+        run: |
+          cp deploy/systemd/lab-* /tmp/ && cd /tmp
+          systemd-analyze verify ./lab-*.service ./lab-*.timer 2>&1 \
+            | grep -v -e 'is not executable' -e '/opt/shuru' || true
+          ! systemd-analyze verify ./lab-*.service ./lab-*.timer 2>&1 \
+            | grep -v -e 'is not executable' -e '/opt/shuru' | grep -qi -e error -e unknown
+      - name: Shell scripts parse
+        run: bash -n scripts/bootstrap_server.sh

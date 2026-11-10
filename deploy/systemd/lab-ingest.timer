@@ -1,0 +1,11 @@
+[Unit]
+Description=shuru: fetch and store new articles (every 6 hours)
+
+[Timer]
+OnCalendar=*-*-* 00/6:10:00
+# Spread start times a little, and catch up after the machine was off.
+RandomizedDelaySec=600
+Persistent=true
+
+[Install]
+WantedBy=timers.target

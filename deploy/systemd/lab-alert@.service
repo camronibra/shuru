@@ -1,0 +1,37 @@
+# Started by systemd when any lab-*.service fails (OnFailure=lab-alert@%n.service).
+# Covers failures that happen outside Python: killed for using too much memory,
+# a timeout, a missing binary. Failures inside Python already alert by themselves.
+[Unit]
+Description=shuru: alert that %i failed
+
+[Service]
+Type=oneshot
+User=shuru
+Group=shuru
+WorkingDirectory=/opt/shuru
+Environment=LAB_ROOT=/srv/lab
+Environment=LAB_SETTINGS=/opt/shuru/config/settings.toml
+Environment=LAB_LOG_FORMAT=json
+EnvironmentFile=-/etc/shuru/env
+ExecStart=/opt/shuru/.venv/bin/shuru alert "shuru: %i failed" "See: journalctl -u %i -n 50"
+TimeoutStartSec=60
+
+Nice=10
+MemoryMax=96M
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+CapabilityBoundingSet=
+RemoveIPC=yes
+UMask=0027

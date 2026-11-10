@@ -1,0 +1,56 @@
+# Marker words for the lexicon baseline (see src/lab/corpus/langid_baselines.py).
+#
+# One list per label: words used in that variety and not in the other. The baseline
+# counts them and picks the label with more hits. It exists to give the classifier
+# something sensible to beat, not to be a good classifier.
+#
+# The lists below are an example for Dari ("prs") against Iranian Persian ("pes").
+# Each line pairs with the same line of the other list. They are well-known
+# differences, but usage is not absolute: Afghan media quote Iranian sources and
+# the other way round. Edit them, or replace them with lists for your own labels.
+
+[markers]
+prs = [
+    "پوهنتون",    # university
+    "پوهنځی",     # faculty
+    "شفاخانه",    # hospital
+    "ولسوالی",    # district
+    "شاروالی",    # municipality
+    "ولایت",      # province
+    "طیاره",      # aeroplane
+    "موتر",       # car
+    "پولیس",      # police
+    "داکتر",      # doctor
+    "محصل",       # university student
+    "فیصد",       # percent
+    "قوماندان",   # commander
+    "سارنوالی",   # prosecutor's office
+    "څارنوالی",   # prosecutor's office (Pashto spelling, common in Afghan media)
+    "تذکره",      # identity card
+    "بایسکل",     # bicycle
+    "چوکی",       # chair, seat
+    "جرگه",       # assembly
+    # Months of the Afghan solar calendar that are not also everyday words.
+    "جوزا", "سنبله", "عقرب", "قوس", "دلو", "حوت",
+]
+pes = [
+    "دانشگاه",    # university
+    "دانشکده",    # faculty
+    "بیمارستان",  # hospital
+    "شهرستان",    # district
+    "شهرداری",    # municipality
+    "استان",      # province
+    "هواپیما",    # aeroplane
+    "خودرو",      # car
+    "پلیس",       # police
+    "دکتر",       # doctor
+    "دانشجو",     # university student
+    "درصد",       # percent
+    "فرمانده",    # commander
+    "دادستانی",   # prosecutor's office
+    "شناسنامه",   # identity card
+    "دوچرخه",     # bicycle
+    "صندلی",      # chair, seat
+    # Months of the Iranian solar calendar that are not also everyday words.
+    "فروردین", "اردیبهشت", "خرداد", "مرداد", "شهریور", "آبان", "آذر", "بهمن", "اسفند",
+]

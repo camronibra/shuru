@@ -1,10 +1,41 @@
-# --- Legacy friendlyscraper ---
-sources_local.py
+# --- Data: never committed (it lives outside the repo; this is a safety net) ---
+/data/
+*.db
+*.db-wal
+*.db-shm
+*.db.gz
+*.sqlite
+*.sqlite3
 *.jsonl
+*.jsonl.gz
+*.parquet
+*.warc
+*.warc.gz
+*.wet
+*.wet.gz
+*.csv.gz
+*.tsv
+*.log
 *.txt
-!requirements.txt
-# Test fixtures (e.g. sample robots.txt files) must stay tracked.
+# Test fixtures (sample robots.txt files) must stay tracked.
 !tests/fixtures/**/*.txt
+/models/
+*.shuru
+*.joblib
+*.pkl
+
+# --- Your own sources and feeds ---
+config/*.local.toml
+
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+.envrc
+*.pem
+*.key
+id_rsa*
+id_ed25519*
 
 # --- Python / tooling ---
 __pycache__/
@@ -20,44 +51,12 @@ dist/
 build/
 *.egg-info/
 
-# --- Secrets and local config ---
-.env
-.env.*
-!.env.example
-.envrc
-config/*.local.toml
-*.pem
-*.key
-id_rsa*
-id_ed25519*
-
-# --- Data: never committed (it lives outside the repo; this is a safety net) ---
-/data/
-*.db
-*.db-wal
-*.db-shm
-*.sqlite
-*.sqlite3
-*.parquet
-*.warc
-*.warc.gz
-*.wet
-*.wet.gz
-*.csv.gz
-*.log
-/models/
-*.joblib
-*.pkl
-
-# --- Rust (only if the conditional Rust stage happens) ---
-/rust/*/target/
-*.so
-
 # --- OS / editor clutter ---
 .DS_Store
 Thumbs.db
 *.swp
 
-# --- AI tooling notes ---
+# --- Personal notes and AI tooling ---
+overview.md
 CLAUDE.md
 .claude/

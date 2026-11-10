@@ -1,0 +1,65 @@
+# Text sources. Nothing is bundled: this file only documents the format.
+# Put your own sources in config/sources.local.toml (same format, gitignored), so
+# the list of sites you collect from stays on your machine.
+#
+# Before adding a site: read its terms of use and its robots.txt, and record what
+# you may do with the text in `licence`. See docs/data-ethics.md.
+#
+# Every source has:
+#   name     short id: lower-case letters, digits, "-" or "_"
+#   kind     how article URLs are found: "rss", "sitemap", "listing" or "file"
+#   label    the language or variety this source is assumed to publish in.
+#            Every document from it inherits this label (distant supervision).
+#            ISO 639-3 codes work well: "prs" = Dari, "pes" = Iranian Persian.
+#   urls     feeds, sitemaps, listing pages or local files, depending on kind
+#
+# Optional:
+#   licence           terms that apply to the text; copied into every export manifest
+#   content_selector  CSS selector of the article body. Without it the page's
+#                     <article> or <main> element is used.
+#   article_pattern   regex an article URL must match. Required for "listing".
+#   allowed_hosts     extra hosts articles may be fetched from (default: hosts in urls)
+#   holdout           true = never trained on; used to test on an unseen source
+#   quota_chars       stop collecting from this source at this many characters
+#   delay_s           seconds between requests to this site, if you want to be slower
+#                     than [http].default_delay_s. robots.txt can raise it further.
+#   enabled           false = keep the entry but skip it
+
+# --- Examples (commented out) ---
+
+# An RSS or Atom feed. Every entry is an article.
+# [[source]]
+# name = "example-af-news"
+# kind = "rss"
+# label = "prs"
+# urls = ["https://news.example.af/rss"]
+# content_selector = "div.article-body"
+# licence = "All rights reserved; collected for private research"
+
+# An XML sitemap (or sitemap index). article_pattern narrows it to articles.
+# [[source]]
+# name = "example-ir-news"
+# kind = "sitemap"
+# label = "pes"
+# urls = ["https://news.example.ir/sitemap.xml"]
+# article_pattern = "/news/\\d+"
+# holdout = true
+
+# HTML pages that link to articles, for sites without a feed.
+# [[source]]
+# name = "example-af-magazine"
+# kind = "listing"
+# label = "prs"
+# urls = ["https://magazine.example.af/", "https://magazine.example.af/culture"]
+# article_pattern = "/\\d{4}/\\d{2}/[^/]+/$"
+# content_selector = "article .entry-content"
+# quota_chars = 5000000
+
+# A dataset you downloaded yourself: JSON Lines, one object per line with a "text"
+# field and optionally "url", "title" and "date". Paths are relative to this folder.
+# [[source]]
+# name = "example-dataset"
+# kind = "file"
+# label = "prs"
+# urls = ["../../datasets/example.jsonl"]
+# licence = "CC BY 4.0, Example Project, https://example.org/dataset"
